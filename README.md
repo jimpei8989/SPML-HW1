@@ -3,4 +3,13 @@
 
 ## Environment
 - Python version: `3.8.5`
-- Packages: Please refer to [requirement.txt](./requirement.txt)
+- Packages: Please refer to [requirements.txt](./requirements.txt)
+
+#### Building Up the Environment
+```bash
+# Assume you already have pyenv
+$ pyenv install 3.8.5
+$ pyenv virtualenv 3.8.5 SPML-HW1
+$ pyenv local SPML-HW1
+$ pip3 install -r requirements.txt
+```

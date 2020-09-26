@@ -1,6 +1,9 @@
 # pyenv version
 .python-version
 
+# Python
+__pycache__/
+
 # data
 data/
 
