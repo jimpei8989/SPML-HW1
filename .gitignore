@@ -1,3 +1,6 @@
+# vscode
+.vscode
+
 # pyenv version
 .python-version
 
@@ -6,4 +9,5 @@ __pycache__/
 
 # data
 data/
+outputs/
 
