@@ -31,12 +31,7 @@ def attack_root(target_model, source_dir, output_dir, **kwargs):
     adv_dataset.save_to_directory()
 
 
-def evaluate_root(source_dir, output_dir, epsilon, eval_mode, **kwargs):
-    models = {
-        'all': eval_models,
-        'fast': target_models,
-    }[eval_mode]
-
+def evaluate_root(source_dir, output_dir, epsilon, **kwargs):
     ori_dataset = OriginalDataset(source_dir)
     adv_dataset = OriginalDataset(output_dir)
     adv_dataloader = DataLoader(adv_dataset, batch_size=1)
@@ -47,19 +42,19 @@ def evaluate_root(source_dir, output_dir, epsilon, eval_mode, **kwargs):
         print('❌ Adversarial dataset validity not passed!')
         return
 
-    accuracies = np.empty((len(models), 10))
+    accuracies = np.empty((len(eval_models), 10))
 
-    for i, model_name in enumerate(models):
+    for i, model_name in enumerate(eval_models):
         model = get_model(model_name, pretrained=True)
         accuracies[i] = evaluate_single_model(model_name.replace('_cifar10', ''), model, adv_dataloader)
 
     means = np.mean(accuracies, axis=1)
 
     # Print markdown table
-    with (Path(output_dir) / f'model_acc_{eval_mode}.md').open('w') as f:
+    with (output_dir / f'model_acc.md').open('w') as f:
         print('Evaluation results: ', file=f)
-        print(f"| Models     | {' | '.join(s.replace('_cifar10', '') for s in models)} |", file=f)
-        print(f"| ---------- |{'|'.join('------' for _ in models)}|", file=f)
+        print(f"| Models     | {' | '.join(s.replace('_cifar10', '') for s in eval_models)} |", file=f)
+        print(f"| ---------- |{'|'.join('------' for _ in eval_models)}|", file=f)
 
         for i, label_name in enumerate(all_labels):
             print(f"| {label_name:10s} |{'|'.join(f' {k:.2f} ' for k in accuracies[:, i])}|", file=f)
@@ -82,14 +77,13 @@ def main():
 
 def parse_arguments():
     parser = ArgumentParser()
-    parser.add_argument('task')
-    parser.add_argument('--source_dir', type=lambda p: Path(p).absolute())
-    parser.add_argument('--output_dir', type=lambda p: Path(p).absolute())
-    parser.add_argument('--target_model')
-    parser.add_argument('--epsilon', type=float, default=8 / 256)
-    parser.add_argument('--num_iters', type=int, default=1)
-    parser.add_argument('--target_method', default='random')
-    parser.add_argument('--eval_mode', default='fast')   # fast, for targeted models only; all for all models
+    parser.add_argument('task', help='choose one from {attack, evaluate}')
+    parser.add_argument('--source_dir', type=lambda p: Path(p).absolute(), help='the directory of the original validating images')
+    parser.add_argument('--output_dir', type=lambda p: Path(p).absolute(), help='the directory of the output adversarial images')
+    parser.add_argument('--target_model', help='proxy model for generating adversarial images')
+    parser.add_argument('--epsilon', type=float, default=8 / 256, help='the l-infinity value in [0, 1], default 8/256 = 0.03125')
+    parser.add_argument('--num_iters', type=int, default=1, help='number of iterations for iterative FGSM, default 1')
+    parser.add_argument('--target_method', default='negative', help='method for target generation, choose one from {negative, random, next}, default negative')
     return parser.parse_args()
 
 
