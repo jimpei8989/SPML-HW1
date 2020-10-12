@@ -1,4 +1,4 @@
-from pytorchcv.model_provider import _models, get_model
+from pytorchcv.model_provider import _models
 
 all_pytorchcv_cifar10_models = [k for k in _models if k.endswith('cifar10')]
 

@@ -8,6 +8,7 @@ from torchvision.transforms import functional as tf
 
 from modules.utils import all_labels
 
+
 class ImageDataset(Dataset):
     '''
     Each item in `data` is a tuple (image_name, image, label), where
@@ -42,10 +43,11 @@ class OriginalDataset(ImageDataset):
 
             assert label_dir.is_dir(), "OriginalDataset.data_dir should contain directory `label_name`"
 
-            print(f'+ Loading {label_name}[{label}] from `{label_dir}`')
+            # print(f'+ Loading {label_name}[{label}] from `{label_dir}`')
 
             for p in label_dir.glob('*.png'):
                 self._data.append((p.name, Image.open(p), label))
+
 
 class AdversarialDataset(ImageDataset):
     def __init__(self, data_dir: Optional[Path] = None):

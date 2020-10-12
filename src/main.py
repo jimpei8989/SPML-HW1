@@ -11,13 +11,20 @@ from modules.fgsm import fgsm_attack
 from modules.evaluate import evaluate_single_model
 from modules.utils import all_labels, target_models
 
+SEED = 0x06902029
 
-def attack_root(source_dir, output_dir, epsilon, **kwargs):
+
+def seed_everything(seed):
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+
+
+def attack_root(source_dir, output_dir, epsilon, num_iters, **kwargs):
     model = get_model('resnet110_cifar10', pretrained=True)
 
     ori_dataset = OriginalDataset(source_dir)
     ori_dataloader = DataLoader(ori_dataset, batch_size=1)
-    adv_dataset = fgsm_attack(model, ori_dataloader, output_dir, epsilon)
+    adv_dataset = fgsm_attack(model, ori_dataloader, output_dir, epsilon, num_iters)
     adv_dataset.save_to_directory()
 
 
@@ -51,6 +58,8 @@ def main():
     args = parse_arguments()
     kwargs = vars(args)
 
+    seed_everything(SEED)
+
     if args.task == 'attack':
         attack_root(**kwargs)
         evaluate_root(**kwargs)
@@ -63,7 +72,8 @@ def parse_arguments():
     parser.add_argument('task')
     parser.add_argument('--source_dir', type=lambda p: Path(p).absolute())
     parser.add_argument('--output_dir', type=lambda p: Path(p).absolute())
-    parser.add_argument('--epsilon', type=float, default=8/256)
+    parser.add_argument('--epsilon', type=float, default=8 / 256)
+    parser.add_argument('--num_iters', type=int, default=1)
     parser.add_argument('--target_method', default='random')
     return parser.parse_args()
 
