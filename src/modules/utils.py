@@ -7,10 +7,20 @@ all_labels = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'h
 target_models = [
     'resnet110_cifar10',            # Top1Err: 3.69 / Params: 1.7M / FLOPs: 255M
     'preresnet272bn_cifar10',       # Top1Err: 3.25 / Params: 2.8M / FLOPs: 420M
+    'resnext29_32x4d_cifar10',      # Top1Err: 3.15 / Params: 4.7M / FLOPs: 780M
     'pyramidnet110_a48_cifar10',    # Top1Err: 3.72 / Params: 1.7M / FLOPs: 408M
     'densenet40_k36_bc_cifar10',    # Top1Err: 4.04 / Params: 1.5M / FLOPs: 654M
 ]
 
-evaluation_models = [
-
+eval_models = [
+    'resnet110_cifar10',            # Top1Err: 3.69 / Params: 1.7M / FLOPs: 255M
+    'resnet272bn_cifar10',
+    'preresnet272bn_cifar10',       # Top1Err: 3.25 / Params: 2.8M / FLOPs: 420M
+    'resnext29_32x4d_cifar10',      # Top1Err: 3.15 / Params: 4.7M / FLOPs: 780M
+    'seresnet272bn_cifar10',
+    'pyramidnet110_a48_cifar10',    # Top1Err: 3.72 / Params: 1.7M / FLOPs: 408M
+    'densenet40_k36_bc_cifar10',    # Top1Err: 4.04 / Params: 1.5M / FLOPs: 654M
+    'wrn16_10_cifar10',
+    'ror3_164_cifar10',
+    'shakeshakeresnet26_2x32d_cifar10',
 ]
