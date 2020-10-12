@@ -8,7 +8,7 @@ from pytorchcv.model_provider import get_model
 
 from modules.dataset import OriginalDataset
 from modules.fgsm import fgsm_attack
-from modules.evaluate import evaluate_single_model
+from modules.evaluate import check_adv_validity, evaluate_single_model
 from modules.utils import all_labels, target_models
 
 SEED = 0x06902029
@@ -19,27 +19,33 @@ def seed_everything(seed):
     torch.manual_seed(seed)
 
 
-def attack_root(source_dir, output_dir, epsilon, num_iters, **kwargs):
+def attack_root(source_dir, output_dir, **kwargs):
     model = get_model('resnet110_cifar10', pretrained=True)
 
     ori_dataset = OriginalDataset(source_dir)
     ori_dataloader = DataLoader(ori_dataset, batch_size=1)
-    adv_dataset = fgsm_attack(model, ori_dataloader, output_dir, epsilon, num_iters)
+    adv_dataset = fgsm_attack(model, ori_dataloader, output_dir, **kwargs)
     adv_dataset.save_to_directory()
 
 
-def evaluate_root(output_dir, **kwargs):
+def evaluate_root(source_dir, output_dir, epsilon, **kwargs):
     eval_models = target_models
 
-    dataset = OriginalDataset(output_dir)
-    dataloader = DataLoader(dataset, batch_size=1)
+    ori_dataset = OriginalDataset(source_dir)
+    adv_dataset = OriginalDataset(output_dir)
+    adv_dataloader = DataLoader(adv_dataset, batch_size=1)
+
+    if check_adv_validity(ori_dataset, adv_dataset, epsilon):
+        print('✓ Adversarial dataset validity passed!')
+    else:
+        print('❌ Adversarial dataset validity not passed!')
+        return
 
     accuracies = np.empty((len(eval_models), 10))
 
     for i, model_name in enumerate(eval_models):
         model = get_model(model_name, pretrained=True)
-
-        accuracies[i] = evaluate_single_model(model, dataloader)
+        accuracies[i] = evaluate_single_model(model, adv_dataloader)
 
     means = np.mean(accuracies, axis=1)
 

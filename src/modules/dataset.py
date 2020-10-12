@@ -1,10 +1,11 @@
 from pathlib import Path
 from typing import Optional
 
-from PIL import Image
+import numpy as np
 import torch
 from torch.utils.data import Dataset
 from torchvision.transforms import functional as tf
+from PIL import Image
 
 from modules.utils import all_labels
 
@@ -27,7 +28,12 @@ class ImageDataset(Dataset):
         image_name, image, label = self._data[index]
         if isinstance(image, Image.Image):
             image = tf.to_tensor(image).cuda()
-        return image_name, image, label
+        return image_name, image, torch.tensor(label).cuda()
+
+    def get_np_images(self):
+        for _, image, _ in self._data:
+            # change type to `np.int32` to prevent overflow
+            yield np.asarray(image).astype(np.int32)
 
 
 class OriginalDataset(ImageDataset):
@@ -45,8 +51,9 @@ class OriginalDataset(ImageDataset):
 
             # print(f'+ Loading {label_name}[{label}] from `{label_dir}`')
 
-            for p in label_dir.glob('*.png'):
-                self._data.append((p.name, Image.open(p), label))
+            for i in range(1, 11):
+                image_name = f'{label_name}{i}.png'
+                self._data.append((image_name, Image.open(label_dir / image_name), label))
 
 
 class AdversarialDataset(ImageDataset):
@@ -79,7 +86,7 @@ class AdversarialDataset(ImageDataset):
             if not label_dir.is_dir():
                 label_dir.mkdir()
 
-            print(f'+ Saving {label_name}[{label}] to `{label_dir}`')
+            # print(f'+ Saving {label_name}[{label}] to `{label_dir}`')
 
             for image_name, image, label in filter(lambda d: d[2] == label, self._data):
                 if isinstance(image, torch.Tensor):

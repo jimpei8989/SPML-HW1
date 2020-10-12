@@ -1,4 +1,5 @@
 import torch
+from torch.nn import CrossEntropyLoss
 from tqdm import tqdm
 
 from modules.dataset import AdversarialDataset
@@ -22,7 +23,7 @@ def generate_target(label, method: str, num_classes=10):
     return ret.unsqueeze(0)
 
 
-def fgsm_attack(model, dataloader, output_dir, epsilon, num_iters, target_method='negative'):
+def fgsm_attack(model, dataloader, output_dir, epsilon=8 / 256, num_iters=1, target_method='negative', **kwargs):
     remove_grads(model)
 
     model.cuda()
@@ -31,6 +32,7 @@ def fgsm_attack(model, dataloader, output_dir, epsilon, num_iters, target_method
     adv_dataset = AdversarialDataset(output_dir)
 
     criterion = SoftCrossEntropyLoss()
+    val_criterion = CrossEntropyLoss()
 
     for image_name, image, label in tqdm(dataloader, desc='Attacking'):
         target = generate_target(label, method=target_method).cuda()
@@ -52,13 +54,16 @@ def fgsm_attack(model, dataloader, output_dir, epsilon, num_iters, target_method
             image.requires_grad = False
 
             image += epsilon * grad
+
+            # Clip image into [0, 1] and with in original image +/- epsilon
             image = torch.max(torch.min(image, upper_bound), lower_bound)
 
             with torch.no_grad():
-                val_loss = criterion(logits, target).item()
+                logits = model(image)
+                val_loss = val_criterion(logits, label).item()
                 history.append((image.clone(), val_loss))
 
-        image, loss = min(history, key=lambda p: p[1])
+        image, loss = max(history, key=lambda p: p[1])
         adv_dataset.add(image_name, image, label)
 
     return adv_dataset
