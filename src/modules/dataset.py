@@ -35,7 +35,7 @@ class ImageDataset(Dataset):
             image = tf.to_tensor(image)
         if self._transform:
             image = self._transform(image)
-        return image_name, image.cuda(), torch.tensor(label).cuda()
+        return image_name, image, torch.tensor(label)
 
     def get_np_images(self):
         for _, image, _ in self._data:

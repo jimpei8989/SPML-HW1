@@ -83,7 +83,7 @@ def parse_arguments():
     parser.add_argument('--proxy_model', help='proxy model for generating adversarial images')
     parser.add_argument('--epsilon', type=float, default=8 / 256, help='the l-infinity value in [0, 1], default 8/256 = 0.03125')
     parser.add_argument('--num_iters', type=int, default=1, help='number of iterations for iterative FGSM, default 1')
-    parser.add_argument('--target_method', default='negative', help='method for target generation, choose one from {negative, random, next}, default negative')
+    parser.add_argument('--target_method', default='untargeted', help='method for target generation, choose one from {untargeted, random, next}, default negative')
     return parser.parse_args()
 
 
