@@ -1,8 +1,10 @@
 import torch
 from torch.nn import CrossEntropyLoss
+from torchvision.transforms import functional as TF
 from tqdm import tqdm
 
-from modules.dataset import AdversarialDataset
+from modules.dataset import AdversarialDataset, cifar10_mean, cifar10_std
+from modules.normalize import Normalize
 from modules.soft_crossentropy import SoftCrossEntropyLoss
 
 
@@ -15,7 +17,7 @@ def generate_target(label, method: str, num_classes=10):
     exclude = [i for i in range(num_classes) if i != label]
     ret = torch.zeros(num_classes)
     if method == 'negative':
-        ret[exclude] = 1
+        ret[exclude] = 1 / 9
     elif method == 'next':
         ret[(label + 1) % num_classes] = 1
     elif method == 'random':
@@ -24,6 +26,9 @@ def generate_target(label, method: str, num_classes=10):
 
 
 def fgsm_attack(model, dataloader, output_dir, epsilon=8 / 256, num_iters=1, target_method='negative', **kwargs):
+    normalize = Normalize(cifar10_mean, cifar10_std).cuda()
+    std = cifar10_std.view(1, 3, 1, 1).cuda()
+
     remove_grads(model)
 
     model.cuda()
@@ -44,7 +49,8 @@ def fgsm_attack(model, dataloader, output_dir, epsilon=8 / 256, num_iters=1, tar
 
         for _ in range(num_iters):
             image.requires_grad = True
-            logits = model(image)
+
+            logits = model(normalize(image))
             loss = criterion(logits, target)
 
             loss.backward()
@@ -59,7 +65,7 @@ def fgsm_attack(model, dataloader, output_dir, epsilon=8 / 256, num_iters=1, tar
             image = torch.max(torch.min(image, upper_bound), lower_bound)
 
             with torch.no_grad():
-                logits = model(image)
+                logits = model(normalize(image))
                 val_loss = val_criterion(logits, label).item()
                 history.append((image.clone(), val_loss))
 

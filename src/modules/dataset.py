@@ -4,10 +4,14 @@ from typing import Optional
 import numpy as np
 import torch
 from torch.utils.data import Dataset
+from torchvision import transforms
 from torchvision.transforms import functional as tf
 from PIL import Image
 
 from modules.utils import all_labels
+
+cifar10_mean = torch.tensor([0.4914, 0.4822, 0.4465])
+cifar10_std = torch.tensor([0.2023, 0.1994, 0.2010])
 
 
 class ImageDataset(Dataset):
@@ -17,9 +21,10 @@ class ImageDataset(Dataset):
         - image is a torch.Tensor / PIL instance
         - label is a integer in [0, 9], representing the label
     '''
-    def __init__(self, data_dir: Path):
+    def __init__(self, data_dir: Optional[Path] = None, transform = None):
         self._data_dir = Path(data_dir)
         self._data = []
+        self._transform = transform
 
     def __len__(self):
         return len(self._data)
@@ -27,8 +32,10 @@ class ImageDataset(Dataset):
     def __getitem__(self, index):
         image_name, image, label = self._data[index]
         if isinstance(image, Image.Image):
-            image = tf.to_tensor(image).cuda()
-        return image_name, image, torch.tensor(label).cuda()
+            image = tf.to_tensor(image)
+        if self._transform:
+            image = self._transform(image)
+        return image_name, image.cuda(), torch.tensor(label).cuda()
 
     def get_np_images(self):
         for _, image, _ in self._data:
@@ -37,8 +44,8 @@ class ImageDataset(Dataset):
 
 
 class OriginalDataset(ImageDataset):
-    def __init__(self, data_dir: Path):
-        super().__init__(data_dir)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.load_from_directory()
 
     def load_from_directory(self):
@@ -49,16 +56,14 @@ class OriginalDataset(ImageDataset):
 
             assert label_dir.is_dir(), "OriginalDataset.data_dir should contain directory `label_name`"
 
-            # print(f'+ Loading {label_name}[{label}] from `{label_dir}`')
-
             for i in range(1, 11):
                 image_name = f'{label_name}{i}.png'
                 self._data.append((image_name, Image.open(label_dir / image_name), label))
 
 
 class AdversarialDataset(ImageDataset):
-    def __init__(self, data_dir: Optional[Path] = None):
-        super().__init__(data_dir)
+    def __init__(self, data_dir: Optional[Path] = None, transform = None):
+        super().__init__(data_dir=data_dir, transform=transform)
 
     def add(self, image_name, image, label):
         # The added things could be unsqueezed (with the first batch dimension)
@@ -85,8 +90,6 @@ class AdversarialDataset(ImageDataset):
             label_dir = self._data_dir / label_name
             if not label_dir.is_dir():
                 label_dir.mkdir()
-
-            # print(f'+ Saving {label_name}[{label}] to `{label_dir}`')
 
             for image_name, image, label in filter(lambda d: d[2] == label, self._data):
                 if isinstance(image, torch.Tensor):
