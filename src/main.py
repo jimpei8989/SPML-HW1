@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 from pytorchcv.model_provider import get_model
 
 from modules.dataset import OriginalDataset
+from modules.ensemble import Ensemble
 from modules.fgsm import fgsm_attack
 from modules.evaluate import check_adv_validity, evaluate_single_model
 from modules.utils import all_labels, eval_models, proxy_models
@@ -19,11 +20,8 @@ def seed_everything(seed):
     torch.manual_seed(seed)
 
 
-def attack_root(proxy_model, source_dir, output_dir, **kwargs):
-    if not proxy_model.endswith('_cifar10'):
-        proxy_model += '_cifar10'
-
-    model = get_model(proxy_model, pretrained=True)
+def attack_root(proxy_models, source_dir, output_dir, **kwargs):
+    model = Ensemble(proxy_models)
 
     ori_dataset = OriginalDataset(data_dir=source_dir)
     ori_dataloader = DataLoader(ori_dataset, batch_size=1)
@@ -64,6 +62,14 @@ def evaluate_root(source_dir, output_dir, epsilon, **kwargs):
 
 def main():
     args = parse_arguments()
+
+    if args.source_dir is None:
+        args.source_dir = (
+            args.proxy_models[0] if len(args.proxy_models) == 1 else ''.join(m[0] for m in args.proxy_models) +
+            f'-{args.target_method[0]}' +
+            f'-{args.num_iters}'
+        )
+
     kwargs = vars(args)
 
     seed_everything(SEED)
@@ -80,7 +86,7 @@ def parse_arguments():
     parser.add_argument('task', help='choose one from {attack, evaluate}')
     parser.add_argument('--source_dir', type=lambda p: Path(p).absolute(), help='the directory of the original validating images')
     parser.add_argument('--output_dir', type=lambda p: Path(p).absolute(), help='the directory of the output adversarial images')
-    parser.add_argument('--proxy_model', help='proxy model for generating adversarial images')
+    parser.add_argument('--proxy_models', nargs='+', help='proxy model for generating adversarial images')
     parser.add_argument('--epsilon', type=float, default=8 / 256, help='the l-infinity value in [0, 1], default 8/256 = 0.03125')
     parser.add_argument('--num_iters', type=int, default=1, help='number of iterations for iterative FGSM, default 1')
     parser.add_argument('--target_method', default='untargeted', help='method for target generation, choose one from {untargeted, random, next}, default negative')
