@@ -9,8 +9,6 @@ class Ensemble(nn.Module):
         for m in models:
             self.add_module(m, get_model(m + '_cifar10', pretrained=True))
 
-        print(*(name for name, module in self.named_children()))
-
     def forward(self, x):
         return torch.mean(
             torch.stack([m(x) for m in self.children()], dim=1)

@@ -11,6 +11,7 @@ from modules.ensemble import Ensemble
 from modules.fgsm import fgsm_attack
 from modules.evaluate import check_adv_validity, evaluate_single_model
 from modules.utils import all_labels, eval_models, proxy_models
+from modules.transform import build_transforms
 
 SEED = 0x06902029
 
@@ -29,9 +30,10 @@ def attack_root(proxy_models, source_dir, output_dir, **kwargs):
     adv_dataset.save_to_directory()
 
 
-def evaluate_root(source_dir, output_dir, epsilon, **kwargs):
+
+def evaluate_root(source_dir, output_dir, epsilon, defenses, **kwargs):
     ori_dataset = OriginalDataset(data_dir=source_dir)
-    adv_dataset = OriginalDataset(data_dir=output_dir)
+    adv_dataset = OriginalDataset(data_dir=output_dir, transform=build_transforms(defenses))
     adv_dataloader = DataLoader(adv_dataset, batch_size=1)
 
     if check_adv_validity(ori_dataset, adv_dataset, epsilon):
@@ -49,7 +51,7 @@ def evaluate_root(source_dir, output_dir, epsilon, **kwargs):
     means = np.mean(accuracies, axis=1)
 
     # Print markdown table
-    with (output_dir / f'model_acc.md').open('w') as f:
+    with (output_dir / f'model_acc{"-defense" if defenses else ""}.md').open('w') as f:
         print('Evaluation results: ', file=f)
         print(f"| Models     | {' | '.join(s.replace('_cifar10', '') for s in eval_models)} |", file=f)
         print(f"| ---------- |{'|'.join('------' for _ in eval_models)}|", file=f)
@@ -58,14 +60,18 @@ def evaluate_root(source_dir, output_dir, epsilon, **kwargs):
             print(f"| {label_name:10s} |{'|'.join(f' {k:.2f} ' for k in accuracies[:, i])}|", file=f)
 
         print(f"| Mean       |{'|'.join(f' {k:.2f} ' for k in means)}|", file=f)
-
+        print(f"> Overall: mean = {np.mean(means):.4f}, std = {np.std(means):.4f}", file=f)
 
 def main():
     args = parse_arguments()
 
-    if args.source_dir is None:
-        args.source_dir = (
-            args.proxy_models[0] if len(args.proxy_models) == 1 else ''.join(m[0] for m in args.proxy_models) +
+    if args.task == 'attack' and args.output_dir is None:
+        args.output_dir = Path('outputs').absolute() / (
+            (
+                args.proxy_models[0]
+                if len(args.proxy_models) == 1
+                else ''.join(m[0] for m in args.proxy_models)
+            ) +
             f'-{args.target_method[0]}' +
             f'-{args.num_iters}'
         )
@@ -90,6 +96,7 @@ def parse_arguments():
     parser.add_argument('--epsilon', type=float, default=8 / 256, help='the l-infinity value in [0, 1], default 8/256 = 0.03125')
     parser.add_argument('--num_iters', type=int, default=1, help='number of iterations for iterative FGSM, default 1')
     parser.add_argument('--target_method', default='untargeted', help='method for target generation, choose one from {untargeted, random, next}, default negative')
+    parser.add_argument('--defenses', nargs='+', help='Some available preprocessing defenses. Available defenses:  Gaussian, JPEG')
     return parser.parse_args()
 
 

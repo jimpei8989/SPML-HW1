@@ -31,10 +31,10 @@ class ImageDataset(Dataset):
 
     def __getitem__(self, index):
         image_name, image, label = self._data[index]
-        if isinstance(image, Image.Image):
-            image = tf.to_tensor(image)
         if self._transform:
             image = self._transform(image)
+        if isinstance(image, Image.Image):
+            image = tf.to_tensor(image)
         return image_name, image, torch.tensor(label)
 
     def get_np_images(self):
