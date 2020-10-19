@@ -7,19 +7,40 @@ all_labels = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'h
 proxy_models = list(map(lambda s: s + '_cifar10', [
     'nin',
     'resnet20',
-    'resnet164bn',
     'preresnet20',
     'resnext29_32x4d',
     'seresnet20',
-    'pyramidnet110_a48',
     'densenet40_k12',
-    'xdensenet40_2_k24_bc',
     'ror3_56',
     'shakeshakeresnet20_2x16d',
-    'diaresnet20',
 ]))
 
-eval_models = proxy_models
+
+eval_models = {
+    'small': list(map(lambda s: s + '_cifar10', [
+        'nin',
+        'resnet20',
+        'resnext29_32x4d',
+        'seresnet20',
+        'pyramidnet110_a48',
+        'densenet40_k12',
+    ])),
+    'large': list(map(lambda s: s + '_cifar10', [
+        'nin',
+        'resnet20',
+        'resnet1001',
+        'resnet164bn',
+        'preresnet20',
+        'resnext29_32x4d',
+        'seresnet20',
+        'pyramidnet110_a48',
+        'densenet40_k12',
+        'xdensenet40_2_k24_bc',
+        'ror3_56',
+        'shakeshakeresnet20_2x16d',
+        'diaresnet20',
+    ]))
+}
 
 # proxy_models = [
 #     'resnet110_cifar10',            # Top1Err: 3.69 / Params: 1.7M / FLOPs: 255M

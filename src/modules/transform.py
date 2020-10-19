@@ -30,7 +30,7 @@ class GaussianBlur():
 
 
 class JpegCompression():
-    def __init__(self, quality=80):
+    def __init__(self, quality=60):
         self._quality = quality
 
     def __call__(self, img: Image.Image) -> Image.Image:

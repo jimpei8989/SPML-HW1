@@ -27,7 +27,12 @@ def generate_target(label, method: str, num_classes=10):
     return ret.unsqueeze(0)
 
 
-def fgsm_attack(model, dataloader, output_dir, epsilon=8 / 256, num_iters=1, target_method='untargeted', **kwargs):
+def fgsm_attack(model, dataloader, output_dir, epsilon=0.03125, step_size=None, num_iters=1, decay_factor=0.0, target_method='untargeted', **kwargs):
+    if step_size is None or step_size == 'same':
+        step_size = epsilon
+    elif step_size == 'divide':
+        step_size = epsilon / num_iters
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     normalize = Normalize(cifar10_mean, cifar10_std).to(device)
@@ -52,6 +57,8 @@ def fgsm_attack(model, dataloader, output_dir, epsilon=8 / 256, num_iters=1, tar
 
         history = []
 
+        g = None
+
         for _ in range(num_iters):
             image.requires_grad = True
 
@@ -61,9 +68,13 @@ def fgsm_attack(model, dataloader, output_dir, epsilon=8 / 256, num_iters=1, tar
             loss.backward()
 
             grad = image.grad.detach().sign()
+            if g is None:
+                g = grad
+            else:
+                g = decay_factor * g + grad
 
             image.requires_grad = False
-            image -= epsilon * grad
+            image -= step_size * g.sign()
 
             # Clip image into [0, 1] and with in original image +/- epsilon
             image = torch.max(torch.min(image, upper_bound), lower_bound)
