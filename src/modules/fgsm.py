@@ -1,3 +1,5 @@
+from collections.abc import Iterable
+
 import torch
 from torch.nn import CrossEntropyLoss
 from torchvision.transforms import functional as TF
@@ -27,11 +29,14 @@ def generate_target(label, method: str, num_classes=10):
     return ret.unsqueeze(0)
 
 
-def fgsm_attack(model, dataloader, output_dir, epsilon=0.03125, step_size=None, num_iters=1, decay_factor=0.0, target_method='untargeted', **kwargs):
+def attack(model, dataloader, output_dir, epsilon=0.03125, step_size=None, num_iters=1, decay_factor=0.0, target_method='untargeted', **kwargs):
     if step_size is None or step_size == 'same':
         step_size = epsilon
     elif step_size == 'divide':
         step_size = epsilon / num_iters
+
+    if not isinstance(decay_factor, Iterable):
+        decay_factor = [decay_factor]
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -47,42 +52,43 @@ def fgsm_attack(model, dataloader, output_dir, epsilon=0.03125, step_size=None, 
     criterion = SoftCrossEntropyLoss()
     val_criterion = CrossEntropyLoss()
 
-    for image_name, image, label in tqdm(dataloader, desc='Attacking'):
-        image = image.to(device)
-        label = label.to(device)
-        target = generate_target(label, method=target_method).to(device)
-
-        upper_bound = torch.min(torch.ones_like(image), image + epsilon)
-        lower_bound = torch.max(torch.zeros_like(image), image - epsilon)
-
+    for image_name, ori_image, ori_label in tqdm(dataloader, desc='Attacking'):
         history = []
 
-        g = None
+        for d in decay_factor:
+            image = ori_image.clone().to(device)
+            label = ori_label.clone().to(device)
+            target = generate_target(label, method=target_method).to(device)
 
-        for _ in range(num_iters):
-            image.requires_grad = True
+            upper_bound = torch.min(torch.ones_like(image), image + epsilon)
+            lower_bound = torch.max(torch.zeros_like(image), image - epsilon)
 
-            logits = model(normalize(image))
-            loss = criterion(logits, target)
+            g = None
 
-            loss.backward()
+            for _ in range(num_iters):
+                image.requires_grad = True
 
-            grad = image.grad.detach().sign()
-            if g is None:
-                g = grad
-            else:
-                g = decay_factor * g + grad
-
-            image.requires_grad = False
-            image -= step_size * g.sign()
-
-            # Clip image into [0, 1] and with in original image +/- epsilon
-            image = torch.max(torch.min(image, upper_bound), lower_bound)
-
-            with torch.no_grad():
                 logits = model(normalize(image))
-                val_loss = val_criterion(logits, label).item()
-                history.append((image.cpu(), val_loss))
+                loss = criterion(logits, target)
+
+                loss.backward()
+
+                grad = image.grad.detach().sign()
+                if g is None:
+                    g = grad
+                else:
+                    g = d * g + grad
+
+                image.requires_grad = False
+                image -= step_size * g.sign()
+
+                # Clip image into [0, 1] and with in original image +/- epsilon
+                image = torch.max(torch.min(image, upper_bound), lower_bound)
+
+                with torch.no_grad():
+                    logits = model(normalize(image))
+                    val_loss = val_criterion(logits, label).item()
+                    history.append((image.cpu(), val_loss))
 
         image, loss = max(history, key=lambda p: p[1])
         adv_dataset.add(image_name, image, label)

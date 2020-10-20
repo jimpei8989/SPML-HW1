@@ -1,3 +1,4 @@
+from functools import partial
 from io import BytesIO
 from typing import List, Optional
 
@@ -11,7 +12,8 @@ from torchvision import transforms as T
 def build_transform(transform):
     return {
         'Gaussian': GaussianBlur,
-        'JPEG': JpegCompression,
+        'JPEG-80': partial(JpegCompression, quality=80),
+        'JPEG-60': partial(JpegCompression, quality=60),
     }[transform]()
 
 

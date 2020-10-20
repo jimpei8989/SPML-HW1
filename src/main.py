@@ -9,7 +9,7 @@ from pytorchcv.model_provider import get_model
 
 from modules.dataset import OriginalDataset
 from modules.ensemble import Ensemble
-from modules.fgsm import fgsm_attack
+from modules.fgsm import attack
 from modules.evaluate import check_adv_validity, evaluate_single_model
 from modules.utils import all_labels, eval_models, proxy_models
 from modules.transform import build_transforms
@@ -27,7 +27,7 @@ def attack_root(proxy_models, source_dir, output_dir, **kwargs):
 
     ori_dataset = OriginalDataset(data_dir=source_dir)
     ori_dataloader = DataLoader(ori_dataset, batch_size=1)
-    adv_dataset = fgsm_attack(model, ori_dataloader, output_dir, **kwargs)
+    adv_dataset = attack(model, ori_dataloader, output_dir, **kwargs)
     adv_dataset.save_to_directory()
 
 
@@ -59,7 +59,7 @@ def evaluate_root(source_dir, output_dir, epsilon, eval_set, defenses, **kwargs)
         for i, label_name in enumerate(all_labels):
             print(f"| {label_name:10s} |{'|'.join(f' {k:.2f} ' for k in accuracies[:, i])}|", file=f)
 
-        print(f"| Mean       |{'|'.join(f' {k:.2f} ' for k in means)}|", file=f)
+        print(f"| Mean       |{'|'.join(f' {k:.2f} ' for k in means)}| {np.mean(means):.4f} | {np.std(means):.4f} |", file=f)
         print(f'\nCategory-wise accuracies', file=f)
         print(f"{'|'.join(f' {k:.2f} ' for k in np.mean(accuracies, axis=0))}", file=f)
         print(f"\n> Overall: mean = {np.mean(means):.4f}, std = {np.std(means):.4f}", file=f)
@@ -83,7 +83,7 @@ def main():
     kwargs = vars(args)
 
     if not args.output_dir.is_dir():
-        args.output_dir.mkdir()
+        args.output_dir.mkdir(parents=True)
 
     if args.task == 'attack':
         with open(args.output_dir / 'training-log.json', 'w') as f:
@@ -95,21 +95,27 @@ def main():
         attack_root(**kwargs)
 
         # Fucking ugly, I want Python 3.9
-        evaluate_root(**({**kwargs, 'eval_set': 'small'}))
+        evaluate_root(**({'eval_set': 'small', **kwargs}))
     elif args.task == 'evaluate':
-        evaluate_root(**({**kwargs, 'eval_set': 'large'}))
+        evaluate_root(**({'eval_set': 'large', **kwargs}))
 
 
 def parse_arguments():
     parser = ArgumentParser()
+
     parser.add_argument('task', help='choose one from {attack, evaluate}')
+
     parser.add_argument('--source_dir', type=lambda p: Path(p).absolute(), help='the directory of the original validating images')
     parser.add_argument('--output_dir', type=lambda p: Path(p).absolute(), help='the directory of the output adversarial images')
     parser.add_argument('--proxy_models', nargs='+', help='proxy model for generating adversarial images')
     parser.add_argument('--epsilon', type=float, default=8 / 256, help='the l-infinity value in [0, 1], default 0.03125')
     parser.add_argument('--step_size', default=None, help='the step size in gradient descent, default the same as epsilon')
     parser.add_argument('--num_iters', type=int, default=1, help='number of iterations for iterative FGSM, default 1')
-    parser.add_argument('--decay_factor', type=float, default=0.0, help='number of iterations for iterative FGSM, default 1')
+    parser.add_argument('--decay_factor',
+        type=lambda t: [0.5, 0.75, 1.0, 1.25, 1.5] if t == 'auto' else float(t),
+        default=0.0,
+        help='number of iterations for iterative FGSM, default 1'
+    )
     parser.add_argument('--target_method', default='untargeted', help='method for target generation, choose one from {untargeted, random, next}, default negative')
     parser.add_argument('--eval_set', help='Evaluation model sets. Available set: small, large')
     parser.add_argument('--defenses', nargs='+', help='Some available preprocessing defenses. Available defenses:  Gaussian, JPEG')
