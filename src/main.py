@@ -117,7 +117,7 @@ def parse_arguments():
         help='number of iterations for iterative FGSM, default 1'
     )
     parser.add_argument('--target_method', default='untargeted', help='method for target generation, choose one from {untargeted, random, next}, default negative')
-    parser.add_argument('--eval_set', help='Evaluation model sets. Available set: small, large')
+    parser.add_argument('--eval_set', default='small', help='Evaluation model sets. Available set: small, large')
     parser.add_argument('--defenses', nargs='+', help='Some available preprocessing defenses. Available defenses:  Gaussian, JPEG')
     return parser.parse_args()
 

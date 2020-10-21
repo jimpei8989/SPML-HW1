@@ -1,48 +1,40 @@
-models=('resnet20' 'resnet1001' '')
-
-# FGSM
-for m in ${models[@]}; do
-    echo "------ $m - FGSM ------"
-    python3 src/main.py attack \
-        --source_dir data/cifar-10_eval \
-        --output_dir experiments/attack/fgsm-${m} \
-        --proxy_model $m \
-        --target_method untargeted \
-        --num_iters 1
-done
-
-# I-FGSM
-for m in ${models[@]}; do
-    echo "------ $m - IFGSM ------"
-    python3 src/main.py attack \
-        --source_dir data/cifar-10_eval \
-        --output_dir experiments/attack/ifgsm-${m} \
-        --proxy_model $m \
-        --target_method untargeted \
-        --num_iters 4 \
-        --step_size divide
-done
-
-# MI-FGSM
-for m in ${models[@]}; do
-    echo "------ $m - MIFGSM ------"
-    python3 src/main.py attack \
-        --source_dir data/cifar-10_eval \
-        --output_dir experiments/attack/mifgsm-${m} \
-        --proxy_model $m \
-        --target_method untargeted \
-        --num_iters 4 \
-        --decay_factor auto \
-        --step_size divide
-done
+models=('resnet20' 'sepreresnet20' 'densenet40_k12' 'resnet1001' 'sepreresnet542bn' 'densenet100_k24')
 
 # PGD
 for m in ${models[@]}; do
     echo "------ $m - PGD ------"
     python3 src/main.py attack \
         --source_dir data/cifar-10_eval \
-        --output_dir experiments/attack/pgd-${m} \
+        --output_dir experiments/proxy/${m} \
         --proxy_model $m \
         --target_method untargeted \
-        --num_iters 4
+        --num_iters 8 \
+        --eval_set proxy_exp
 done
+
+echo "------ Ensemble - Weak - PGD ------"
+python3 src/main.py attack \
+    --source_dir data/cifar-10_eval \
+    --output_dir experiments/proxy/ensemble-weak \
+    --proxy_model resnet20 sepreresnet20 densenet40_k12 \
+    --target_method untargeted \
+    --num_iters 8 \
+    --eval_set proxy_exp
+
+echo "------ Ensemble - Strong - PGD ------"
+python3 src/main.py attack \
+    --source_dir data/cifar-10_eval \
+    --output_dir experiments/proxy/ensemble-strong \
+    --proxy_model resnet1001 sepreresnet542 densenet100_k24 \
+    --target_method untargeted \
+    --num_iters 8 \
+    --eval_set proxy_exp
+
+echo "------ Ensemble - All - PGD ------"
+python3 src/main.py attack \
+    --source_dir data/cifar-10_eval \
+    --output_dir experiments/proxy/ensemble \
+    --proxy_model ${models[@]} \
+    --target_method untargeted \
+    --num_iters 8 \
+    --eval_set proxy_exp

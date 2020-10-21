@@ -1,4 +1,4 @@
-models=('resnet20' 'resnext29_32x4d' 'densenet40_k12')
+models=('resnet20' 'sepreresnet20' 'densenet40_k12')
 
 # FGSM
 for m in ${models[@]}; do

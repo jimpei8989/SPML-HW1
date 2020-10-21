@@ -18,12 +18,21 @@ proxy_models = list(map(lambda s: s + '_cifar10', [
 
 eval_models = {
     'small': list(map(lambda s: s + '_cifar10', [
-        'nin',
         'resnet20',
-        'resnext29_32x4d',
-        'seresnet20',
-        'pyramidnet110_a48',
+        'sepreresnet20',
         'densenet40_k12',
+        'nin',
+        'resnext29_32x4d',
+        'pyramidnet110_a48',
+    ])),
+    'proxy_exp': list(map(lambda s: s + '_cifar10', [
+        'resnet20',
+        'resnet1001',
+        'sepreresnet20',
+        'sepreresnet542bn',
+        'densenet40_k12',
+        'densenet100_k24',
+        'pyramidnet110_a48',
     ])),
     'large': list(map(lambda s: s + '_cifar10', [
         'nin',
