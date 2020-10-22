@@ -10,21 +10,28 @@ proxy_models=(
     'nin'
 )
 
-iters=(2 4 8 16 32)
+iters=64
 
-for i in ${iters[@]}; do
-    echo $i
-    python3 src/main.py attack \
-        --source_dir data/cifar-10_eval \
-        --output_dir experiments/final/pgd-$i \
-        --proxy_model ${proxy_models[@]} \
-        --target_method untargeted \
-        --num_iters $i \
-        --eval_set large
+python3 src/main.py attack \
+    --source_dir data/cifar-10_eval \
+    --output_dir adv_imgs \
+    --proxy_model ${proxy_models[@]} \
+    --target_method untargeted \
+    --num_iters ${iters} \
+    --eval_set large
 
-    python3 src/main.py evaluate \
-        --source_dir data/cifar-10_eval \
-        --output_dir experiments/final/pgd-$i \
-        --eval_set large \
-        --defense JPEG-80
-done
+python3 src/main.py evaluate \
+    --source_dir data/cifar-10_eval \
+    --output_dir adv_imgs \
+    --eval_set large \
+    --defense JPEG-80
+
+mv adv_imgs/result-large-defense.md adv_imgs/results-large-d80.md
+
+python3 src/main.py evaluate \
+    --source_dir data/cifar-10_eval \
+    --output_dir adv_imgs \
+    --eval_set large \
+    --defense JPEG-60
+
+mv adv_imgs/result-large-defense.md adv_imgs/results-large-d60.md
