@@ -10,7 +10,7 @@ proxy_models=(
     'nin'
 )
 
-iters=64
+iters=32
 
 python3 src/main.py attack \
     --source_dir data/cifar-10_eval \
