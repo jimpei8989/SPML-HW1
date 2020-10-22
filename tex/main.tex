@@ -27,6 +27,7 @@
 \usepackage{microtype}      % microtypography
 \usepackage{multirow}
 \usepackage{makecell}
+\usepackage{csquotes}
 
 \title{Security and Privacy of Machine Learning - Homework 1}
 
@@ -41,23 +42,23 @@
 \maketitle
 
 \begin{abstract}
-  In this homework, I implemented adversarial attacks against CIFAR-10 image classifiers under a gray-box setting. I tried several attacking methods and consider multiple attacking parameters. Furthermore, I also implemented some possible preprocessing-based defenses so that I can evaluate in a more approporiate setting. Based on the experiments I made, I finally selected the final adversarial examples that could tear down xxx\% on our evaluation set.
+  In this homework, we\footnote{The subject is "we" although I do the homework on my own only :)} implemented adversarial attacks against CIFAR-10 image classifiers under a gray-box setting. We've tried several attacking methods and consider multiple attacking parameters. Furthermore, we also implemented some possible preprocessing-based defenses so that we can evaluate in a more approporiate setting. Based on the experiments we made, we finally selected the final adversarial examples that could perfectly take down the model. Our attack is also effective on models with strong preprocessing-based defense.
 \end{abstract}
 
 \section{Introduction}
-Powerful as neural networks are, they are also vulnerable to malicious adversarial examples. The perturbations are imperceptible to human; however, they are likely to make the model output the wrong answer with high confidence.
+Powerful as neural networks are, they are also vulnerable to malicious adversarial examples. The perturbations are imperceptible to human; however, they are likely to make the classifiers output the wrong label with high confidence.
 
-In this homework, I implemented adversarial attacks against CIFAR-10 image classifiers under a gray-box
+In this homework, we implemented adversarial attacks against CIFAR-10 classifiers under a gray-box
 setting. The models are chosen from imgcls\cite{imgcls}, and the adversarial perturbation is $l_{\infty} = 8 / 256$.
 
-Code is available at: \url{https://github.com/jimpei8989/SPML-HW1}.
+Our code is available at: \url{https://github.com/jimpei8989/SPML-HW1}\footnote{It is made public after the deadline.}.
 
 \section{Attacking Details}
-In this section, I'll explain the attacking methods and attacking techniques I use. Moreover, some experiments are conducted to achieve the final adversarial examples. During the experiments, the attack accuracies are not the only metric I consider, transferbility is also taken into account since it's a gray-box setting. Intuitively, I use the standard deviation of the accuracies among different models to examine transferbility. The greater the value is, the less transferbility it is.
+In this section, we'll explain the attacking methods and attacking techniques we use. Moreover, some experiments are conducted to achieve the final adversarial examples. During the experiments, the attack accuracies are not the only metric I consider, transferbility is also taken into account since it's a gray-box setting and we have no knowledge about the models used. Intuitively, we use the standard deviation of the accuracies among different models to examine transferbility. The greater the value is, the less transferbility it has as models have different performance on our adversarial examples.
 
 \subsection{Attacking Mechanisms}
 
-To find adversarial examples, that is, to find a perturbation $\delta$ such that
+To find adversarial examples\cite{chen2020spml}, that is, to find a perturbation $\delta$ such that
 
 \begin{equation}
   \delta = \mathop{\arg\min}_{x' \in \mathrm{Adv}(x)} (x', y; \theta)
@@ -67,14 +68,14 @@ The simplest method is Fast Gradient Sign Method\cite{goodfellow2014explaining}.
 
 The experiment results are shown on table \ref{attack-experiments}. In I-FGSM, MI-FGSM and PGD, the number of iterations is selected to be 4 based on some random experiments. The magic number selected on my own, considering both attack accuracy and transferbility.
 
-From the table, we can tell that FGSM is simple and already performances well. On the other hand, the iterative methods, I-FGSM, MI-FGSM and PGD, lead to an ever better attack accuracy. However, they have little transferbility as the standard deviations are much larger. Also, we can observe that those non-proxy models have similar accuracies among row 1, row 5, row 9 and row 13. I think all these methods focus only on the proxy model so that the adversarial examples have limited effect on other models.
-
-As for the selection of proxy model, it's relatively better when we choose ResNet20. Thus, I'll choose it as the experiment proxy model in the next sections. Also, I'll consider PGD as the major attack mechanism.
+From the table, we can tell that FGSM is simple and already performances well. On the other hand, the iterative methods, I-FGSM, MI-FGSM and PGD, lead to an ever better attack rate. However, they have worse transferbility as the standard deviations are significantly larger. We can also observe that the attack is only effective on those proxy models, but have slight effect on other models.
 
 \begin{table}
   \label{attack-experiments}
   \centering
-  \caption{Experiment results. The evaluation models A-F are \texttt{nin}, \texttt{resnet20}, \texttt{resnext29-32x4d}, \texttt{seresnet20}, \texttt{pyramidnet110-a48}, \texttt{densenet40-k12}, respectively. Bold texts indicate the proxy model is the same as the evaluation model.}
+  \caption{
+    Experiment results on different attack methods. The evaluation models A-F are \texttt{resnet20}, \texttt{sepreresnet20}, \texttt{densenet40-k12}, \texttt{nin}, \texttt{resnext29-32x4d}, \texttt{pyramidnet110-a48}, respectively. Bold texts indicate the proxy model is the same as the evaluation model.
+  }
   \begin{tabular}{cccccccccc}
     \toprule
     \multicolumn{2}{c}{Settings} & \multicolumn{8}{c}{Evaluation models} \\
@@ -85,48 +86,68 @@ As for the selection of proxy model, it's relatively better when we choose ResNe
     None                  & None        & 0.94 & 0.96 & 1.00 & 0.97 & 1.00 & 0.98 & 0.9750 & 0.0214 \\
     \midrule
 
-    \multirow{4}{*}{FGSM} & ResNet20    & 0.64 & \textbf{0.36} & 0.54 & 0.53 & 0.56 & 0.53 & 0.5267 & 0.0836 \\
-                          & ResNext20   & 0.81 & 0.73 & \textbf{0.45} & 0.70 & 0.63 & 0.72 & 0.6733 & 0.1129 \\
-                          & DenseNet40  & 0.73 & 0.67 & 0.58 & 0.71 & 0.65 & \textbf{0.56} & 0.6500 & 0.0624 \\
-                          & Average     & \\
+    \multirow{4}{*}{FGSM} & \texttt{resnet20}       & \textbf{0.36} & 0.53 & 0.53 & 0.64 & 0.54 & 0.56 & 0.5267 & 0.0836 \\
+                          & \texttt{sepreresnet20}  & 0.58 & \textbf{0.49} & 0.60 & 0.71 & 0.61 & 0.65 & 0.6067 & 0.0670 \\
+                          & \texttt{densenet40-k12} & 0.67 & 0.67 & \textbf{0.56} & 0.73 & 0.58 & 0.65 & 0.6433 & 0.0576 \\
+                          & Average                 & 0.54 & 0.56 & 0.56 & 0.69 & 0.58 & 0.62 & 0.5922 & 0.0694 \\
     \midrule
 
     \multirow{4}{*}{\shortstack{I-FGSM \\ \# iterations = 4}}
-                          & ResNet20    & 0.77 & \textbf{0.03} & 0.74 & 0.41 & 0.50 & 0.42 & 0.4783 & 0.2460 \\
-                          & ResNext20   & 0.90 & 0.80 & \textbf{0.06} & 0.77 & 0.58 & 0.67 & 0.6300 & 0.2740 \\
-                          & DenseNet40  & 0.86 & 0.62 & 0.71 & 0.56 & 0.55 & \textbf{0.10} & 0.5667 & 0.2336 \\
-                          & Average     & \\
+                          & \texttt{resnet20}       & \textbf{0.03} & 0.37 & 0.42 & 0.77 & 0.74 & 0.50 & 0.4717 & 0.2483 \\
+                          & \texttt{sepreresnet20}  & 0.52 & \textbf{0.20} & 0.57 & 0.78 & 0.85 & 0.66 & 0.5967 & 0.2104 \\
+                          & \texttt{densenet40-k12} & 0.62 & 0.65 & \textbf{0.10} & 0.86 & 0.71 & 0.55 & 0.5817 & 0.2356 \\
+                          & Average                 & 0.39 & 0.41 & 0.36 & 0.80 & 0.77 & 0.57 & 0.5500 & 0.2314 \\
     \midrule
 
     \multirow{4}{*}{\shortstack{MI-FGSM \\ \# iterations = 4}}
-                          & ResNet20    & 0.67 & \textbf{0.03} & 0.69 & 0.38 & 0.44 & 0.40 & 0.4350 & 0.2193 \\
-                          & ResNext20   & 0.89 & 0.79 & \textbf{0.04} & 0.74 & 0.58 & 0.66 & 0.6167 & 0.2756 \\
-                          & DenseNet40  & 0.82 & 0.62 & 0.64 & 0.53 & 0.52 & \textbf{0.10} & 0.5383 & 0.2194 \\
-                          & Average     & \\
+                          & \texttt{resnet20}       & \textbf{0.03} & 0.36 & 0.40 & 0.67 & 0.69 & 0.44 & 0.4317 & 0.2203 \\
+                          & \texttt{sepreresnet20}  & 0.45 & \textbf{0.19} & 0.51 & 0.72 & 0.69 & 0.59 & 0.5250 & 0.1768 \\
+                          & \texttt{densenet40-k12} & 0.62 & 0.58 & \textbf{0.10} & 0.82 & 0.64 & 0.52 & 0.5467 & 0.2199 \\
+                          & Average                 & 0.37 & 0.38 & 0.34 & 0.74 & 0.67 & 0.52 & 0.5011 & 0.2057 \\
     \midrule
 
     \multirow{4}{*}{\shortstack{PGD \\ \# iterations = 4}}
-                          & ResNet20    & 0.63 & \textbf{0.00} & 0.55 & 0.31 & 0.41 & 0.31 & 0.3683 & 0.2024 \\
-                          & ResNext20   & 0.86 & 0.73 & \textbf{0.03} & 0.66 & 0.43 & 0.55 & 0.5433 & 0.2662 \\
-                          & DenseNet40  & 0.77 & 0.54 & 0.51 & 0.60 & 0.43 & \textbf{0.04} & 0.4817 & 0.2233 \\
-                          & Average     & \\
+                          & \texttt{resnet20}       & \textbf{0.00} & 0.28 & 0.31 & 0.63 & 0.55 & 0.41 & 0.3633 & 0.2041 \\
+                          & \texttt{sepreresnet20}  & 0.33 & \textbf{0.06} & 0.42 & 0.74 & 0.61 & 0.41 & 0.4283 & 0.2144 \\
+                          & \texttt{densenet40-k12} & 0.54 & 0.56 & \textbf{0.04} & 0.77 & 0.51 & 0.43 & 0.4750 & 0.2202 \\
+                          & Average                 & 0.29 & 0.30 & 0.26 & 0.71 & 0.56 & 0.42 & 0.4222 & 0.2129 \\
     \bottomrule
   \end{tabular}
 \end{table}
 
 \subsection{Proxy Model Selection}
-Selection of proxy models plays an important role in black / gray box attacks. A better selection may lead to better transferbility and thus make the attack more successful without knowing the exact model. In this part, we want to discuss the selection in three manners, \textit{one weak model}, \textit{one strong model}, and \textit{ensemble of multiple models}.
+Selection of proxy models plays an important role in black / gray box attacks. A better selection may lead to better transferbility and thus make the attack more successful without knowing the exact model. From the previous experiment, we can observe that different proxy models have different attack rate. In this part, we want to discuss the selection in the following three manners, \textit{one weak model}, \textit{one strong model}, and \textit{ensemble of multiple models}.
 
-First of all, let's discuss first two first. The \textit{weak} models and \textit{strong} models are mainly examined by the number of layers, parameters and FLOPs. In this experiment, I'll take \texttt{ResNet20} and \texttt{ResNet1001} as the \textit{weak} and \textit{strong} models, respectively.
+Let's discuss first two first. The \textit{weak} models and \textit{strong} models are mainly examined by the number of layers, parameters and FLOPs. In this experiment, I'll take \texttt{resnet20}, \texttt{sepreresnet20} and \texttt{densenet40-k12} as \textit{weak} models, \texttt{resnet1001}, \texttt{sepreresnet542bn} and \texttt{densenet100-k24} as \textit{strong} models. As for the \textit{ensemble}, I average the model outputs (logits) and take the whole process as an ensemble model. Same attacking mechanism can be directly applied on the ensemble models.
+
+The experiment results are shown in table \ref{proxy-experiments}. To our surprise, if we choose strong models as proxy models, the outcome standard deviation is unignorably smaller, indicating that stronger proxy models yield better transferbility. The result is contrast to what we thought at first\footnote{Discussion with Andy Chen (B06902001)}, that strong models with greater capacity will make the adversarial examples "\textit{overfit}" to them. So far, we haven't had a better explanation on it.
+
+At last, it's clear to see that \textit{ensemble of several models} does improve the transferbility a lot. Interestingly, when we take ensemble of model A-F as proxy model, meaning that we have no knowledge about G during the attacking phase, the adversarial images have a better attack rate on G. This shows that ensemble of several models could help a lot us on the transferbility.
 
 \begin{table}
   \label{proxy-experiments}
   \centering
-  \caption{Experiment results. The evaluation models A-G are \texttt{nin}, \texttt{resnet20}, \texttt{resnext29-32x4d}, \texttt{seresnet20}, \texttt{pyramidnet110-a48}, \texttt{densenet40-k12}, \texttt{resnet1001}, respectively. Bold texts indicate the proxy model is the same as the evaluation model.}
-  \begin{tabular}{cccccccccc}
-    \toprule
-    \makecell{Proxy \\ Model} & A & B & C & D & E & F & G & Avg. & Std. Dev. \\
+  \caption{
+    The evaluation models A-G are \texttt{resnet20}, \texttt{resnet1001}, \texttt{sepreresnet20}, \texttt{sepreresnet542bn}, \texttt{densenet40-k12}, \texttt{densenet100-k24}, \texttt{pyramidnet110-a48}, respectively. Bold texts indicate the proxy model is the same as the evaluation model. The attacking mechanism is PGD, with number of iterations 8.
+  }
 
+  \begin{tabular}{cccccccccccccc}
+    \toprule
+    Category & \makecell{Proxy \\ Model(s)} & A & B & C & D & E & F & G & Avg. & Std. Dev. \\
+    \midrule
+    \multirow{4}{*}{Weak}   & \texttt{resnet20}         & \textbf{0.00} & 0.75 & 0.21 & 0.51 & 0.27 & 0.62 & 0.38 & 0.3914 & 0.2378 \\
+                            & \texttt{seresnet20}       & 0.30 & 0.70 & \textbf{0.02} & 0.54 & 0.38 & 0.62 & 0.43 & 0.4271 & 0.2099 \\
+                            & \texttt{densenet40-k12}   & 0.55 & 0.89 & 0.55 & 0.66 & \textbf{0.00} & 0.54 & 0.41 & 0.5143 & 0.2510 \\
+                            & Average                   & 0.28 & 0.78 & 0.26 & 0.57 & 0.21 & 0.59 & 0.40 & 0.4443 & 0.2329 \\
+    \midrule
+    \multirow{4}{*}{Strong} & \texttt{resnet1001}       & 0.49 & \textbf{0.18} & 0.48 & 0.59 & 0.43 & 0.61 & 0.42 & 0.4571 & 0.1318 \\
+                            & \texttt{seresnet542bn}    & 0.55 & 0.87 & 0.60 & \textbf{0.16} & 0.43 & 0.59 & 0.48 & 0.5257 & 0.1978 \\
+                            & \texttt{densenet100-k24}  & 0.61 & 0.84 & 0.65 & 0.58 & 0.45 & \textbf{0.09} & 0.41 & 0.5186 & 0.2181 \\
+                            & Average                   & 0.55 & 0.63 & 0.57 & 0.44 & 0.43 & 0.43 & 0.43 & 0.5005 & 0.1826 \\
+    \midrule
+    \multirow{3}{*}{Ensemble} & A, C, E                 & 0.00 & 0.50 & 0.00 & 0.20 & 0.00 & 0.32 & 0.13 & 0.1643 & 0.1774 \\
+                              & B, D, F                 & 0.39 & 0.20 & 0.37 & 0.16 & 0.27 & 0.15 & 0.20 & 0.2486 & 0.0906 \\
+                              & A-F                     & 0.00 & 0.06 & 0.00 & 0.01 & 0.00 & 0.01 & 0.04 & 0.0171 & 0.0219 \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -134,15 +155,20 @@ First of all, let's discuss first two first. The \textit{weak} models and \texti
 
 \subsection{Possible Defenses}
 To evaluate our attack more precisely, we add two possible preprocessing-based defenses in the evaluation phase.
+
 \begin{itemize}
-  \item \textbf{Gaussian Blur}: We tried to add some gaussian blur in the evaluation phase. However, even we set the radius to 1 have a terrible accuracy. Since the image size is 32x32, a 3x3 filter might be so big for it that the classifiers are not able to classify the blur images even they haven't been perturbed.
-  \item \textbf{JPEG Compression} \cite{das2017keeping}: We can adopt the systematic compression method to reduce adversarial noise in the preprocessing phase. In this experiment, we tried two quality parameters, 60 and 80, which are both able to
+  \item \textbf{Gaussian Blur}: A heuristic way to add some noise to the image to reduce adversarial noise.
+  \item \textbf{JPEG Compression} \cite{das2017keeping}: A systematic compression that can reduce adversarial noise.
 \end{itemize}
+
+The experiment results are shown on table \ref{defense-experiments}. Unluckily, it seems not to be a good idea to add gaussian noise because it also affect the benign dataset a lot. As for JPEG compression method, the performance on benign dataset is much more acceptable (original accuracy > 0.8), and the defense on the adversarial dataset is also successful (adversarial accuracy > 0.5).
 
 \begin{table}
   \label{defense-experiments}
   \centering
-  \caption{Experiment results. For the first four rows, they are tested on the benign examples with different defense methods.}
+  \caption{
+    Experiment results. For the first four rows, they are tested on the benign examples with different defense methods. The adversarial examples are generated using PGD, with 8 iterations.
+  }
   \begin{tabular}{cccccccccc}
     \toprule
     \multicolumn{2}{c}{Settings} & \multicolumn{8}{c}{Evaluation models} \\
@@ -150,21 +176,65 @@ To evaluate our attack more precisely, we add two possible preprocessing-based d
     \makecell{Attack \\ Method} & \makecell{Defense \\ Method} & A & B & C & D & E & F & Avg. & Std. Dev. \\
     \midrule
 
-    \multirow{4}{*}{None} & None                & 0.94 & 0.96 & 1.00 & 0.97 & 1.00 & 0.98 & 0.9750 & 0.0214 \\
-                          & Gaussian (radius=1) & 0.63 & 0.57 & 0.38 & 0.49 & 0.53 & 0.50 & 0.5167 & 0.0770 \\
-                          & JPEG (quality=80)   & 0.86 & 0.83 & 0.92 & 0.85 & 0.85 & 0.81 & 0.8533 & 0.0340 \\
-                          & JPEG (quality=60)   & 0.85 & 0.77 & 0.83 & 0.77 & 0.79 & 0.79 & 0.8000 & 0.0300 \\
+    \multirow{4}{*}{None} & None                & 0.96 & 0.98 & 0.98 & 0.94 & 1.00 & 1.00 & 0.9767 & 0.0213 \\
+                          & Gaussian (radius=1) & 0.57 & 0.55 & 0.50 & 0.63 & 0.38 & 0.53 & 0.5267 & 0.0767 \\
+                          & JPEG (quality=80)   & 0.83 & 0.82 & 0.81 & 0.86 & 0.92 & 0.85 & 0.8483 & 0.0362 \\
+                          & JPEG (quality=60)   & 0.77 & 0.81 & 0.79 & 0.85 & 0.83 & 0.79 & 0.8067 & 0.0269 \\
+    \midrule
+
+    \multirow{4}{*}{\shortstack{Ensemble \\ PGD-8}}
+                          & None                & 0.00 & 0.00 & 0.00 & 0.55 & 0.08 & 0.04 & 0.1117 & 0.1982 \\
+                          & JPEG (quality=80)   & 0.52 & 0.46 & 0.48 & 0.70 & 0.60 & 0.56 & 0.5533 & 0.0806 \\
+                          & JPEG (quality=60)   & 0.66 & 0.59 & 0.68 & 0.77 & 0.72 & 0.62 & 0.6733 & 0.0599 \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-\subsubsection*{Experiments}
+\subsection{Iterations}
+As a chinese saying goes:
 
-\subsection{Some Miscellious Techiniques Used}
+\begin{displayquote}
+  Constant dropping wears the stone.
+\end{displayquote}
+
+We want to examine whether it's good if we increase the number of iterations in iterative methods. The settings are the same with section \ref{final-decision}. In the experiments below, we use a ensemble of several models, and the adversarial images will be tested with and without defenses. The defense we use here is \textit{JPEG-80}.
+
+The experiment results are shown on table \ref{iteration-experiments}. As we increase the number of iterations, the attack rate, both with and without defense applied on evaluation models, improve only by a slight amount. Thus,
+
+\begin{table}
+  \label{iteration-experiments}
+  \centering
+  \caption{
+    Experiment results of increasing number of iterations. Here we use an ensemble of several models, as listed in section \ref{final-decision}. The adversarial examples are generated using PGD, and the defense we use here is JPEG Compression with quality 80.
+  }
+  \begin{tabular}{ccccc}
+    \toprule
+    & \multicolumn{2}{c}{w/o defense} & \multicolumn{2}{c}{w/ defense} \\
+    \cmidrule(r){2-3} \cmidrule(r){4-5}
+    \# iterations & Avg. & Std. Dev. & Avg. & Std. Dev. \\
+    \midrule
+    2             & 0.3023 & 0.0963 & 0.6438 & 0.0383 \\
+    8             & 0.0715 & 0.0764 & 0.5508 & 0.0639 \\
+    32            & 0.0438 & 0.0697 & 0.5438 & 0.0697 \\
+    128           & 0.0400 & 0.0695 & 0.5631 & 0.0678 \\
+    512           & 0.0400 & 0.0732 & 0.5515 & 0.0747 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \subsection{Final Decision}
+\label{final-decision}
+In previous sections, we discussed about several methods used in this homework. Those experiments gave us useful insights and helped us to come up with the final selection to generate adversarial examples. We have the following settings for our adversarial examples:
+
+\begin{itemize}
+  \item Attach mechanism: \textbf{PGD}, with \textbf{32} iterations.
+  \item Proxy model: \textbf{Ensemble of several models}, including \texttt{resnet20}, \texttt{resnet1001}, \texttt{sepreresnet20}, \texttt{sepreresnet542bn}, \texttt{densenet40-k12}, \texttt{densenet100-k24}, \texttt{pyramidnet110-a48}, \texttt{resnext29-32x4d} and \texttt{nin}.
+\end{itemize}
+
+The attack rate is \textbf{4.38\%} on the models without any defense, and \textbf{54.38\%} on the models with strong preprocessing-based deense.
 
 \section{Conclusion}
+In this homework, we've tried several methods and techniques to achieve better attack rate. For attacking method, we've tried FGSM and several iterative methods, and we found PGD to be the most desirable. Another important issue is the selection of proxy models, we've made some experiments on weak models, strong models and ensemble of models, and we find ensemble to be the most powerful choice. Moreover, we also applied some preprocessing-based defense and evaluate our works with such defense. At last, we show that our adversarial examples can attack the models well, even they are equipped with strong preprocessing-based defenses.
 
 \bibliographystyle{ieeetr}
 \bibliography{citation}
