@@ -3,7 +3,7 @@
 
 ## Environment
 - Python version: `3.8.5`
-- Framework: `PyTorch 1.6.0`
+- DL Framework: `PyTorch 1.6.0`
 - Packages: Please refer to [requirements.txt](./requirements.txt)
 
 ### Building Up the Environment
@@ -17,44 +17,67 @@ $ pip3 install -r requirements.txt
 
 ## How to run my script?
 
-### Help
-```
-usage: main.py [-h] [--source_dir SOURCE_DIR] [--output_dir OUTPUT_DIR] [--target_model TARGET_MODEL] [--epsilon EPSILON] [--num_iters NUM_ITERS] [--target_method TARGET_METHOD] task
+### Prerequisite
+- Download the dataset into `data/cifar-10_eval`
 
-positional arguments:
-  task                  choose one from {attack, evaluate}
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --source_dir SOURCE_DIR
-                        the directory of the original validating images
-  --output_dir OUTPUT_DIR
-                        the directory of the output adversarial images
-  --target_model TARGET_MODEL
-                        proxy model for generating adversarial images
-  --epsilon EPSILON     the l-infinity value in [0, 1], default 8/256 = 0.03125
-  --num_iters NUM_ITERS
-                        number of iterations for iterative FGSM, default 1
-  --target_method TARGET_METHOD
-                        method for target generation, choose one from {negative, random, next}, default negative
+### Help Message
+Please take a look at:
+```sh
+python3 src/main.py --help
 ```
 
 ### Attacking Single Model
-```bash
-python3 src/main.py attack --source_dir ${source_dir} --output_dir ${output_dir} --target_model ${target_model} --target_method ${target_model} --num_iters {}
+```sh
+proxy_model="resnet20"
+
+python3 src/main.py attack \
+    --source_dir data/cifar-10_eval \
+    --output_dir adv_imgs \
+    --proxy_model ${proxy_model} \
+    --target_method untargeted \
+    --num_iters 8 \
+    --eval_set small
 ```
 
-### Evaluation
-I use the following model for evalution my adversarial examples:
-- resnet110_cifar10
-- resnet272bn_cifar10
-- preresnet272bn_cifar10
-- resnext29_32x4d_cifar10
-- seresnet272bn_cifar10
-- pyramidnet110_a48_cifar10
-- densenet40_k36_bc_cifar10
-- wrn16_10_cifar10
-- ror3_164_cifar10
-- shakeshakeresnet26_2x32d_cifar10
+### Evaluation with defense (JPEG-80)
+```sh
+python3 src/main.py evaluate \
+    --source_dir data/cifar-10_eval \
+    --output_dir adv_imgs \
+    --eval_set large \
+    --defense JPEG-80
+```
+- If you don't want to defense, simply remove that argument.
 
-They are chosen mainly based on #params and GFLOPs, since I don't have powerful computational resource QQ.
+### Generating my adversarial examples
+```sh
+proxy_models=(
+    'resnet20'
+    'resnet1001'
+    'sepreresnet20'
+    'sepreresnet542bn'
+    'densenet40_k12'
+    'densenet100_k24'
+    'pyramidnet110_a48'
+    'resnext29_32x4d'
+    'nin'
+)
+
+iters=32
+
+python3 src/main.py attack \
+    --source_dir data/cifar-10_eval \
+    --output_dir adv_imgs \
+    --proxy_model ${proxy_models[@]} \
+    --target_method untargeted \
+    --num_iters ${iters} \
+    --eval_set large
+
+python3 src/main.py evaluate \
+    --source_dir data/cifar-10_eval \
+    --output_dir adv_imgs \
+    --eval_set large \
+    --defense JPEG-80
+```
+
+> Note that some log / experiment result files will appear in `adv_imgs/` directory.
