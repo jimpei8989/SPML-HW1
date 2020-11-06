@@ -80,4 +80,31 @@ python3 src/main.py evaluate \
     --defense JPEG-80
 ```
 
-> Note that some log / experiment result files will appear in `adv_imgs/` directory.
+> Note that some log / experiment result files will appear in `adv_imgs/` directory. (deleted)
+
+## Final Evaluation
+The models used in this experiment are:
+- nin
+- sepreresnet56
+- xdensenet40-2-k24-bc
+- ror3-110
+- resnet1001
+
+### Vanilla Evaluation (w/o preprocessing)
+
+| Models     | nin | sepreresnet56 | resnet1001 | xdensenet40-2-k24-bc | ror3-110 |
+| ---------- |------|------|------|------|------|
+| airplane   | 0.30 | 0.00 | 0.00 | 0.00 | 0.00 |
+| automobile | 0.40 | 0.00 | 0.00 | 0.10 | 0.10 |
+| bird       | 0.10 | 0.10 | 0.00 | 0.00 | 0.10 |
+| cat        | 0.00 | 0.00 | 0.00 | 0.10 | 0.10 |
+| deer       | 0.20 | 0.00 | 0.00 | 0.00 | 0.00 |
+| dog        | 0.20 | 0.10 | 0.00 | 0.00 | 0.20 |
+| frog       | 0.20 | 0.00 | 0.00 | 0.00 | 0.10 |
+| horse      | 0.20 | 0.00 | 0.00 | 0.00 | 0.00 |
+| ship       | 0.60 | 0.10 | 0.00 | 0.10 | 0.00 |
+| truck      | 0.50 | 0.00 | 0.00 | 0.00 | 0.00 |
+| *Mean*     | 0.27 | 0.03 | 0.00 | 0.03 | 0.06 | 
+
+Overall: mean = 0.0780, std = 0.0979
+

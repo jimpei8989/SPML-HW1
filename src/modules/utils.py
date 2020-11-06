@@ -48,6 +48,13 @@ eval_models = {
         'ror3_56',
         'shakeshakeresnet20_2x16d',
         'diaresnet20',
+    ])),
+    'final': list(map(lambda s: s + '_cifar10', [
+        'nin',
+        'sepreresnet56',
+        'resnet1001',
+        'xdensenet40_2_k24_bc',
+        'ror3_110',
     ]))
 }
 

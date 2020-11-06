@@ -7,7 +7,15 @@
 # Python
 __pycache__/
 
+# results
+adv_imgs/*.md
+adv_imgs/*.json
+
 # data
 data/
 outputs/
 experiments/
+
+# submission
+hw1_b06902029/
+hw1_b06902029.zip
